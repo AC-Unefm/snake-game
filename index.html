@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Snake - Juego de la serpiente</title>
+  <style>
+    /* ── Variables ──────────────────────────────────────────── */
+    :root {
+      --color-bg:          #0d0d0d;
+      --color-surface:     #111111;
+      --color-text:        #e0e0e0;
+      --color-muted:       #666666;
+      --color-primary:     #a855f7;
+      --color-primary-dim: #7e22ce;
+      --color-food:        #f87171;
+      --color-warn:        #facc15;
+      --color-grid:        #161616;
+      --color-border:      #222222;
+      --color-success:     #4ade80;
+    }
+
+    /* ── Reset ──────────────────────────────────────────────── */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--color-bg);
+      color: var(--color-text);
+      font-family: 'Courier New', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+      gap: 0;
+    }
+
+    /* ── Skip link ──────────────────────────────────────────── */
+    .skip-link {
+      position: absolute;
+      top: -100%;
+      left: 1rem;
+      background: var(--color-primary);
+      color: #fff;
+      padding: 0.4rem 0.9rem;
+      border-radius: 0 0 4px 4px;
+      text-decoration: none;
+      font-size: 0.85rem;
+      letter-spacing: 0.1em;
+      z-index: 9999;
+      transition: top 0.15s;
+    }
+    .skip-link:focus { top: 0; outline: 2px solid #fff; outline-offset: 2px; }
+
+    /* ── Solo lectores de pantalla ──────────────────────────── */
+    .sr-only {
+      position: absolute; width: 1px; height: 1px;
+      padding: 0; margin: -1px; overflow: hidden;
+      clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+
+    /* ── Cabecera ───────────────────────────────────────────── */
+    header { text-align: center; margin-bottom: 1.2rem; }
+
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 400;
+      letter-spacing: 0.3em;
+      color: var(--color-primary);
+      text-transform: uppercase;
+    }
+
+    /* ── Pié de página───────────────────────────────────────── */
+
+    footer {
+      background: var(--color-bg);
+      color: var(--color-muted);
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+      font-weight: 400;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 10vh;
+      padding: 2rem 1rem;
+      gap: 0;
+    }
+
+    /* ── HUD ────────────────────────────────────────────────── */
+    #hud {
+      display: flex;
+      gap: 40px;
+      font-size: 0.85rem;
+      letter-spacing: 0.15em;
+      color: var(--color-muted);
+      width: 400px;
+      justify-content: center;
+      margin-bottom: 0.75rem;
+    }
+    #hud span { color: var(--color-text); }
+    #levelEl  { color: var(--color-warn); transition: color 0.3s; }
+
+    /* ── Indicador de sesión ────────────────────────────────── */
+    #session-bar {
+      display: flex;
+      gap: 8px;
+      width: 400px;
+      justify-content: center;
+      margin-bottom: 0.6rem;
+      align-items: center;
+    }
+    .session-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: 1px solid var(--color-muted);
+      background: transparent;
+      transition: background 0.3s, border-color 0.3s;
+    }
+    .session-dot.done    { background: var(--color-primary); border-color: var(--color-primary); }
+    .session-dot.active  { background: var(--color-warn);    border-color: var(--color-warn); }
+    #session-label {
+      font-size: 0.72rem;
+      letter-spacing: 0.15em;
+      color: var(--color-muted);
+      text-transform: uppercase;
+      margin-left: 6px;
+    }
+
+    /* ── Canvas ─────────────────────────────────────────────── */
+    #game-region { line-height: 0; }
+    #canvas {
+      border: 1px solid var(--color-border);
+      background: var(--color-surface);
+      display: block;
+    }
+    #canvas:focus, #canvas:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 4px;
+    }
+
+    /* ── Mensaje de estado ──────────────────────────────────── */
+    #message {
+      width: 400px;
+      min-height: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 0.75rem;
+      font-size: 0.78rem;
+      letter-spacing: 0.18em;
+      color: var(--color-muted);
+      text-transform: uppercase;
+      text-align: center;
+    }
+    #message.active { color: var(--color-primary); }
+    #message.warn   { color: var(--color-warn); }
+
+    /* ── Panel de resultados de sesión ─────────────────────── */
+    #results-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.88);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    #results-overlay.visible { display: flex; }
+
+    #results-panel {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      width: 100%;
+      max-width: 480px;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.4rem;
+    }
+
+    #results-panel h2 {
+      font-size: 1rem;
+      font-weight: 400;
+      letter-spacing: 0.3em;
+      color: var(--color-primary);
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    /* Tabla de intentos */
+    .results-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+    }
+    .results-table th {
+      color: var(--color-muted);
+      text-transform: uppercase;
+      font-weight: 400;
+      padding: 0.3rem 0.5rem;
+      border-bottom: 1px solid var(--color-border);
+      text-align: right;
+    }
+    .results-table th:first-child { text-align: center; }
+    .results-table td {
+      padding: 0.35rem 0.5rem;
+      text-align: right;
+      color: var(--color-text);
+      border-bottom: 1px solid #1a1a1a;
+    }
+    .results-table td:first-child { text-align: center; color: var(--color-muted); }
+    .results-table tr.best-row td { color: var(--color-primary); }
+
+    /* Estadísticas de sesión */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.7rem 1.5rem;
+    }
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .stat-label {
+      font-size: 0.68rem;
+      letter-spacing: 0.12em;
+      color: var(--color-muted);
+      text-transform: uppercase;
+    }
+    .stat-value {
+      font-size: 1.1rem;
+      color: var(--color-text);
+    }
+    .stat-value.highlight { color: var(--color-primary); }
+
+    /* Botón nueva sesión */
+    #btn-new-session {
+      background: transparent;
+      border: 1px solid var(--color-primary);
+      color: var(--color-primary);
+      font-family: 'Courier New', monospace;
+      font-size: 0.8rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      padding: 0.6rem 1.2rem;
+      cursor: pointer;
+      align-self: center;
+      transition: background 0.2s, color 0.2s;
+    }
+    #btn-new-session:hover,
+    #btn-new-session:focus-visible {
+      background: var(--color-primary);
+      color: #fff;
+      outline: none;
+    }
+
+    /* ── Panel de ayuda ─────────────────────────────────────── */
+    #help-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.88);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    #help-overlay.visible { display: flex; }
+
+    #help-panel {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      width: 100%;
+      max-width: 420px;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.4rem;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    #help-panel h2 {
+      font-size: 1rem;
+      font-weight: 400;
+      letter-spacing: 0.3em;
+      color: var(--color-primary);
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .help-section { display: flex; flex-direction: column; gap: 0.5rem; }
+
+    .help-section h3 {
+      font-size: 0.72rem;
+      font-weight: 400;
+      letter-spacing: 0.2em;
+      color: var(--color-muted);
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--color-border);
+      padding-bottom: 0.3rem;
+    }
+
+    .help-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      color: var(--color-text);
+      gap: 1rem;
+    }
+
+    .help-row span:first-child { color: var(--color-muted); flex: 1; }
+
+    .help-keys {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    kbd {
+      background: #1e1e1e;
+      border: 1px solid var(--color-border);
+      border-bottom-width: 2px;
+      border-radius: 3px;
+      padding: 0.15rem 0.45rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.72rem;
+      color: var(--color-text);
+      white-space: nowrap;
+    }
+
+    .help-note {
+      font-size: 0.72rem;
+      color: var(--color-muted);
+      line-height: 1.6;
+      letter-spacing: 0.05em;
+    }
+
+    .help-note strong { color: var(--color-primary); font-weight: 400; }
+
+    /* Botón ? en el header */
+    #btn-help {
+      position: absolute;
+      top: 1.2rem;
+      right: 1.2rem;
+      background: transparent;
+      border: 1px solid var(--color-border);
+      color: var(--color-muted);
+      font-family: 'Courier New', monospace;
+      font-size: 0.8rem;
+      width: 1.8rem;
+      height: 1.8rem;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    #btn-help:hover,
+    #btn-help:focus-visible {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+      outline: none;
+    }
+
+    /* Botón cerrar ayuda */
+    #btn-close-help {
+      background: transparent;
+      border: 1px solid var(--color-border);
+      color: var(--color-muted);
+      font-family: 'Courier New', monospace;
+      font-size: 0.78rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      align-self: center;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    #btn-close-help:hover,
+    #btn-close-help:focus-visible {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+      outline: none;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .skip-link, .session-dot, #btn-new-session,
+      #btn-help, #btn-close-help { transition: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <a href="#game-region" class="skip-link">Saltar al juego</a>
+
+  <header>
+    <h1>Snake</h1>
+  </header>
+
+  <button
+    id="btn-help"
+    aria-label="Abrir ayuda del juego"
+    aria-haspopup="dialog"
+    title="Ayuda (H)"
+  >?</button>
+
+  <main>
+    <p id="game-instructions" class="sr-only">
+      Juego de serpiente. Usa las teclas de flecha para mover la serpiente.
+      Pulsa Enter o Barra espaciadora para iniciar. Cada sesión tiene 5 intentos.
+      Al finalizar los 5 intentos se mostrará un resumen con tus estadísticas.
+    </p>
+
+    <!-- HUD -->
+    <section id="hud" aria-label="Puntuación del juego">
+      <span>
+        <span class="sr-only">Puntuación:</span>
+        SCORE:&nbsp;<span id="scoreEl" aria-live="polite" aria-atomic="true">0</span>
+      </span>
+      <span>
+        <span class="sr-only">Nivel:</span>
+        LVL:&nbsp;<span id="levelEl" aria-live="polite" aria-atomic="true">1</span>
+      </span>
+      <span>
+        <span class="sr-only">Mejor puntuación:</span>
+        BEST:&nbsp;<span id="bestEl">0</span>
+      </span>
+    </section>
+
+    <!-- Barra de progreso de sesión -->
+    <div id="session-bar" aria-label="Progreso de sesión" role="status">
+      <span class="session-dot" id="dot-0"></span>
+      <span class="session-dot" id="dot-1"></span>
+      <span class="session-dot" id="dot-2"></span>
+      <span class="session-dot" id="dot-3"></span>
+      <span class="session-dot" id="dot-4"></span>
+      <span id="session-label">intento 1 de 5</span>
+    </div>
+
+    <!-- Canvas -->
+    <section id="game-region" aria-label="Área de juego Snake" aria-describedby="game-instructions">
+      <canvas id="canvas" width="400" height="400"
+        role="img" aria-label="Tablero del juego Snake" tabindex="0"></canvas>
+    </section>
+
+    <div id="message" class="active" role="status" aria-live="polite" aria-atomic="true">
+      PRESIONA CUALQUIER TECLA PARA INICIAR
+    </div>
+
+    <div id="game-alert" role="alert" aria-live="assertive" aria-atomic="true" class="sr-only"></div>
+  </main>
+
+  <!-- Panel de ayuda -->
+  <div id="help-overlay" role="dialog" aria-modal="true" aria-labelledby="help-title" aria-hidden="true">
+    <div id="help-panel">
+      <h2 id="help-title">Ayuda</h2>
+
+      <div class="help-section">
+        <h3>Controles</h3>
+        <div class="help-row">
+          <span>Mover la serpiente</span>
+          <div class="help-keys">
+            <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd>
+          </div>
+        </div>
+        <div class="help-row">
+          <span>Iniciar / siguiente intento</span>
+          <div class="help-keys">
+            <kbd>Enter</kbd><kbd>Espacio</kbd>
+          </div>
+        </div>
+        <div class="help-row">
+          <span>Abrir esta ayuda</span>
+          <div class="help-keys">
+            <kbd>H</kbd><kbd>?</kbd>
+          </div>
+        </div>
+        <div class="help-row">
+          <span>Cerrar modal</span>
+          <div class="help-keys">
+            <kbd>Esc</kbd>
+          </div>
+        </div>
+      </div>
+
+      <div class="help-section">
+        <h3>Objetivo</h3>
+        <p class="help-note">
+          Guía la serpiente para comer la comida <strong>roja</strong>.
+          Cada comida hace crecer la serpiente un segmento.
+          El juego termina si chocas con una pared o con tu propio cuerpo.
+        </p>
+      </div>
+
+      <div class="help-section">
+        <h3>Dificultad</h3>
+        <p class="help-note">
+          La velocidad aumenta automáticamente cada <strong>5 puntos</strong>.
+          El nivel actual se muestra en el HUD superior en amarillo.
+          A partir del nivel 6 la velocidad es exigente.
+        </p>
+      </div>
+
+      <div class="help-section">
+        <h3>Sesiones</h3>
+        <p class="help-note">
+          Cada sesión agrupa <strong>5 intentos</strong> consecutivos.
+          Los 5 puntos sobre el tablero muestran tu progreso:
+          amarillo = intento activo, morado = completado.
+          Al terminar el quinto intento se muestra un panel con
+          tus estadísticas de sesión: mejor puntuación, promedio,
+          recorrido total, velocidad máxima y eficiencia.
+        </p>
+      </div>
+
+      <div class="help-section">
+        <h3>Estadísticas</h3>
+        <div class="help-row"><span>Score</span><span>Comidas en el intento</span></div>
+        <div class="help-row"><span>Nivel máx.</span><span>Nivel más alto alcanzado</span></div>
+        <div class="help-row"><span>Duración</span><span>Tiempo del intento</span></div>
+        <div class="help-row"><span>Recorrido</span><span>Celdas recorridas</span></div>
+        <div class="help-row"><span>Vel. máx.</span><span>Celdas/segundo en el pico</span></div>
+        <div class="help-row"><span>Eficiencia</span><span>Comida / 100 celdas recorridas</span></div>
+      </div>
+
+      <button id="btn-close-help" aria-label="Cerrar ayuda">Cerrar</button>
+    </div>
+  </div>
+
+  <!-- Panel de resultados de sesión -->
+  <div id="results-overlay" role="dialog" aria-modal="true" aria-labelledby="results-title">
+    <div id="results-panel">
+      <h2 id="results-title">Resultados de sesión</h2>
+      <table class="results-table" aria-label="Detalle de los 5 intentos">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Score</th>
+            <th>Nivel</th>
+            <th>Duración</th>
+            <th>Recorrido</th>
+            <th>Vel. máx.</th>
+          </tr>
+        </thead>
+        <tbody id="results-tbody"></tbody>
+      </table>
+      <div class="stats-grid" id="stats-grid"></div>
+      <button id="btn-new-session">Nueva sesión</button>
+    </div>
+  </div>
+
+  <script>
+    /* ── Referencias al DOM ─────────────────────────────────── */
+    const canvas         = document.getElementById('canvas');
+    const ctx            = canvas.getContext('2d');
+    const scoreEl        = document.getElementById('scoreEl');
+    const levelEl        = document.getElementById('levelEl');
+    const bestEl         = document.getElementById('bestEl');
+    const msgEl          = document.getElementById('message');
+    const alertEl        = document.getElementById('game-alert');
+    const sessionLabel   = document.getElementById('session-label');
+    const resultsOverlay = document.getElementById('results-overlay');
+    const resultsTbody   = document.getElementById('results-tbody');
+    const statsGrid      = document.getElementById('stats-grid');
+    const btnNewSession  = document.getElementById('btn-new-session');
+    const dots           = Array.from({ length: 5 }, (_, i) => document.getElementById(`dot-${i}`));
+    const helpOverlay    = document.getElementById('help-overlay');
+    const btnHelp        = document.getElementById('btn-help');
+    const btnCloseHelp   = document.getElementById('btn-close-help');
+
+    /* ── Constantes del tablero ─────────────────────────────── */
+    const GRID_SIZE  = 20;
+    const COLS       = canvas.width  / GRID_SIZE;
+    const ROWS       = canvas.height / GRID_SIZE;
+
+    /* ── Constantes de velocidad ────────────────────────────── */
+    const BASE_TICK  = 130;
+    const MIN_TICK   = 45;
+    const STEP_SCORE = 5;
+    const STEP_MS    = 12;
+
+    /* ── Constantes de sesión ───────────────────────────────── */
+    const SESSION_ATTEMPTS = 5;
+
+    /* ── Paleta ─────────────────────────────────────────────── */
+    const COLORS = { head: '#a855f7', body: '#7e22ce', food: '#f87171', grid: '#161616' };
+
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    /* ── Estado global ──────────────────────────────────────── */
+    let snake, dir, nextDir, food, score, best, running, gameOver, loopId;
+    let flashTimer = null;
+    let alertTimer = null;
+
+    /* ── Estado de sesión ───────────────────────────────────── */
+    /**
+     * @typedef  {Object} AttemptRecord
+     * @property {number} score       - Puntuación obtenida.
+     * @property {number} maxLevel    - Nivel máximo alcanzado.
+     * @property {number} duration    - Duración en ms.
+     * @property {number} steps       - Celdas recorridas (movimientos).
+     * @property {number} maxSpeedCps - Velocidad máxima en celdas/segundo.
+     */
+
+    /** @type {AttemptRecord[]} */
+    let sessionAttempts = [];
+    let currentAttempt  = 0;        // índice 0-4
+    let attemptStart    = 0;        // Date.now() al inicio del intento
+    let attemptSteps    = 0;        // contador de movimientos
+    let attemptMaxLevel = 1;
+    let attemptMinTick  = BASE_TICK; // tick más corto alcanzado en el intento
+
+    best = parseInt(localStorage.getItem('snakeBest') || '0', 10);
+    bestEl.textContent = best;
+
+    /* ── Helpers de nivel y velocidad ───────────────────────── */
+
+    /**
+     * Calcula el nivel actual según la puntuación.
+     * @param {number} s - Puntuación actual.
+     * @returns {number} Nivel (empieza en 1).
+     */
+    function getLevel(s) {
+      return Math.floor(s / STEP_SCORE) + 1;
+    }
+
+    /**
+     * Calcula el intervalo en ms para el tick actual.
+     * @param {number} s - Puntuación actual.
+     * @returns {number} Milisegundos entre ticks.
+     */
+    function getTick(s) {
+      const lvl = getLevel(s);
+      return Math.max(MIN_TICK, BASE_TICK - (lvl - 1) * STEP_MS);
+    }
+
+    /* ── Gestión de dots de sesión ──────────────────────────── */
+
+    /**
+     * Actualiza los indicadores visuales de progreso de sesión.
+     * @returns {void}
+     */
+    function updateSessionBar() {
+      dots.forEach((dot, i) => {
+        dot.classList.remove('done', 'active');
+        if (i < currentAttempt)           dot.classList.add('done');
+        else if (i === currentAttempt)    dot.classList.add('active');
+      });
+      sessionLabel.textContent = `intento ${currentAttempt + 1} de ${SESSION_ATTEMPTS}`;
+    }
+
+    /* ── Inicialización de intento ──────────────────────────── */
+
+    /**
+     * Inicializa el estado del juego para un nuevo intento.
+     * @returns {void}
+     */
+    function init() {
+      snake    = [{ x: 10, y: 10 }, { x: 9, y: 10 }, { x: 8, y: 10 }];
+      dir      = { x: 1, y: 0 };
+      nextDir  = { x: 1, y: 0 };
+      score    = 0;
+      gameOver = false;
+      scoreEl.textContent = 0;
+      levelEl.textContent = 1;
+
+      // Resetear métricas del intento
+      attemptStart    = Date.now();
+      attemptSteps    = 0;
+      attemptMaxLevel = 1;
+      attemptMinTick  = BASE_TICK;
+
+      placeFood();
+      updateSessionBar();
+    }
+
+    /**
+     * Coloca la comida en una celda libre aleatoria.
+     * Construye lista de celdas libres para evitar bucles infinitos.
+     * @returns {void}
+     */
+    function placeFood() {
+      const occupied = new Set(snake.map(s => `${s.x},${s.y}`));
+      const free = [];
+      for (let x = 0; x < COLS; x++)
+        for (let y = 0; y < ROWS; y++)
+          if (!occupied.has(`${x},${y}`)) free.push({ x, y });
+
+      if (free.length === 0) { endGame(true); return; }
+      food = free[Math.floor(Math.random() * free.length)];
+    }
+
+    /* ── Game loop ──────────────────────────────────────────── */
+
+    /**
+     * Programa el siguiente tick según la velocidad actual.
+     * @returns {void}
+     */
+    function scheduleNext() {
+      if (!running) return;
+      loopId = setTimeout(tick, getTick(score));
+    }
+
+    /**
+     * Ejecuta un ciclo completo: actualiza y renderiza.
+     * @returns {void}
+     */
+    function tick() {
+      update();
+      draw();
+      scheduleNext();
+    }
+
+    /**
+     * Actualiza la lógica del juego en cada tick.
+     * Registra pasos, nivel máximo y velocidad mínima de tick.
+     * @returns {void}
+     */
+    function update() {
+      dir = { ...nextDir };
+      const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+
+      if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS) { endGame(false); return; }
+      if (snake.some(s => s.x === head.x && s.y === head.y))             { endGame(false); return; }
+
+      snake.unshift(head);
+      attemptSteps++;
+
+      // Registrar tick mínimo (velocidad máxima)
+      const currentTick = getTick(score);
+      if (currentTick < attemptMinTick) attemptMinTick = currentTick;
+
+      if (head.x === food.x && head.y === food.y) {
+        const prevLevel = getLevel(score);
+        score++;
+        scoreEl.textContent = score;
+
+        const newLevel = getLevel(score);
+        levelEl.textContent = newLevel;
+        if (newLevel > attemptMaxLevel) attemptMaxLevel = newLevel;
+
+        if (newLevel > prevLevel) {
+          levelEl.style.color = '#f97316';
+          setTimeout(() => { levelEl.style.color = ''; }, 400);
+          flashMessage(`LVL ${newLevel} — ¡MÁS RÁPIDO!`, 900, 'warn');
+          announceAlert(`Nivel ${newLevel}. ¡La velocidad ha aumentado!`);
+        }
+
+        if (score > best) {
+          best = score;
+          bestEl.textContent = best;
+          localStorage.setItem('snakeBest', best);
+        }
+        placeFood();
+      } else {
+        snake.pop();
+      }
+    }
+
+    /* ── Render ─────────────────────────────────────────────── */
+
+    /**
+     * Dibuja el grid de fondo.
+     * @returns {void}
+     */
+    function drawGrid() {
+      ctx.strokeStyle = COLORS.grid;
+      ctx.lineWidth = 0.5;
+      for (let x = 0; x <= canvas.width; x += GRID_SIZE) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+      }
+      for (let y = 0; y <= canvas.height; y += GRID_SIZE) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+      }
+    }
+
+    /**
+     * Dibuja la comida con efecto de pulso (respeta prefers-reduced-motion).
+     * @returns {void}
+     */
+    function drawFood() {
+      const pulse = reducedMotion ? 0.5 : (0.5 + 0.5 * Math.sin(Date.now() / 200));
+      const fr    = GRID_SIZE * 0.28 + pulse * GRID_SIZE * 0.08;
+      ctx.save();
+      ctx.fillStyle   = COLORS.food;
+      ctx.shadowColor = COLORS.food;
+      ctx.shadowBlur  = reducedMotion ? 8 : (8 + pulse * 6);
+      ctx.beginPath();
+      ctx.arc(food.x * GRID_SIZE + GRID_SIZE / 2, food.y * GRID_SIZE + GRID_SIZE / 2, fr, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    /**
+     * Dibuja un segmento de la serpiente como rectángulo redondeado.
+     * @param {{ x: number, y: number }} seg - Posición de la celda.
+     * @param {boolean} isHead - Si es la cabeza aplica glow.
+     * @returns {void}
+     */
+    function drawSegment(seg, isHead) {
+      const pad = isHead ? 1 : 2;
+      const r = 4;
+      const x = seg.x * GRID_SIZE + pad, y = seg.y * GRID_SIZE + pad;
+      const w = GRID_SIZE - pad * 2,     h = GRID_SIZE - pad * 2;
+      ctx.save();
+      ctx.fillStyle = isHead ? COLORS.head : COLORS.body;
+      if (isHead) { ctx.shadowColor = COLORS.head; ctx.shadowBlur = 12; }
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);      ctx.arcTo(x + w, y,     x + w, y + r,     r);
+      ctx.lineTo(x + w, y + h - r);  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+      ctx.lineTo(x + r, y + h);      ctx.arcTo(x,     y + h, x,     y + h - r, r);
+      ctx.lineTo(x, y + r);          ctx.arcTo(x,     y,     x + r, y,          r);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    /**
+     * Renderiza el frame completo.
+     * @returns {void}
+     */
+    function draw() {
+      ctx.fillStyle = '#111';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      drawGrid();
+      drawFood();
+      snake.forEach((seg, i) => drawSegment(seg, i === 0));
+    }
+
+    /* ── Mensajes visuales ──────────────────────────────────── */
+
+    /**
+     * Muestra un mensaje temporal que desaparece tras una duración.
+     * @param {string} txt      - Texto a mostrar.
+     * @param {number} duration - Duración en ms.
+     * @param {string} [cls]    - Clase CSS: 'active' | 'warn'.
+     * @returns {void}
+     */
+    function flashMessage(txt, duration, cls = 'active') {
+      clearTimeout(flashTimer);
+      msgEl.classList.remove('active', 'warn');
+      msgEl.classList.add(cls);
+      msgEl.textContent = txt;
+      flashTimer = setTimeout(() => {
+        if (!gameOver && running) hideMessage();
+      }, duration);
+    }
+
+    /**
+     * Muestra un mensaje persistente.
+     * @param {string} txt   - Texto a mostrar.
+     * @param {string} [cls] - Clase CSS: 'active' | 'warn'.
+     * @returns {void}
+     */
+    function showMessage(txt, cls = 'active') {
+      clearTimeout(flashTimer);
+      msgEl.classList.remove('active', 'warn');
+      msgEl.classList.add(cls);
+      msgEl.textContent = txt;
+    }
+
+    /**
+     * Oculta el mensaje de estado.
+     * @returns {void}
+     */
+    function hideMessage() {
+      msgEl.classList.remove('active', 'warn');
+      msgEl.textContent = '';
+    }
+
+    /**
+     * Anuncia texto al lector de pantalla mediante aria-live assertive.
+     * Vacía el nodo antes de reasignar para forzar la relectura.
+     * @param {string} txt - Texto a anunciar.
+     * @returns {void}
+     */
+    function announceAlert(txt) {
+      clearTimeout(alertTimer);
+      alertEl.textContent = '';
+      alertTimer = setTimeout(() => { alertEl.textContent = txt; }, 50);
+    }
+
+    /* ── Fin de intento y lógica de sesión ──────────────────── */
+
+    /**
+     * Registra las métricas del intento que acaba de terminar.
+     * @returns {AttemptRecord}
+     */
+    function captureAttempt() {
+      const duration    = Date.now() - attemptStart;
+      // Velocidad máxima: 1000ms / tick_min = celdas/segundo
+      const maxSpeedCps = parseFloat((1000 / attemptMinTick).toFixed(1));
+      return { score, maxLevel: attemptMaxLevel, duration, steps: attemptSteps, maxSpeedCps };
+    }
+
+    /**
+     * Finaliza el intento actual, guarda métricas y decide si
+     * continúa la sesión o muestra el panel de resultados.
+     * @param {boolean} [won=false] - true si el tablero quedó lleno.
+     * @returns {void}
+     */
+    function endGame(won = false) {
+      gameOver = true;
+      running  = false;
+      clearTimeout(loopId);
+
+      const record = captureAttempt();
+      sessionAttempts.push(record);
+
+      // Marcar dot del intento como completado
+      dots[currentAttempt].classList.remove('active');
+      dots[currentAttempt].classList.add('done');
+
+      const isLastAttempt = currentAttempt >= SESSION_ATTEMPTS - 1;
+
+      if (isLastAttempt) {
+        // Sesión completa — mostrar resultados tras breve pausa
+        showMessage(`INTENTO ${currentAttempt + 1} · ${score} pts — CARGANDO RESULTADOS...`);
+        announceAlert(`Fin del intento ${currentAttempt + 1}. Puntuación: ${score}. Calculando resultados de sesión.`);
+        setTimeout(showSessionResults, 1400);
+      } else {
+        currentAttempt++;
+        updateSessionBar();
+        if (won) {
+          showMessage(`¡TABLERO LLENO! — ENTER PARA INTENTO ${currentAttempt + 1}`, 'warn');
+          announceAlert(`¡Ganaste el intento! Pulsa Enter para el intento ${currentAttempt + 1} de ${SESSION_ATTEMPTS}.`);
+        } else {
+          showMessage(`GAME OVER · ${score} pts — ENTER PARA INTENTO ${currentAttempt + 1}`);
+          announceAlert(`Fin del juego. Puntuación: ${score}. Pulsa Enter para el intento ${currentAttempt + 1} de ${SESSION_ATTEMPTS}.`);
+        }
+      }
+    }
+
+    /* ── Panel de resultados ─────────────────────────────────── */
+
+    /**
+     * Formatea milisegundos como "m:ss" o "ss s".
+     * @param {number} ms - Duración en milisegundos.
+     * @returns {string} Duración formateada.
+     */
+    function formatDuration(ms) {
+      const totalSec = Math.round(ms / 1000);
+      const min = Math.floor(totalSec / 60);
+      const sec = totalSec % 60;
+      return min > 0 ? `${min}m ${sec.toString().padStart(2, '0')}s` : `${sec}s`;
+    }
+
+    /**
+     * Calcula el promedio de un array de números.
+     * @param {number[]} arr - Array de valores numéricos.
+     * @returns {number} Promedio redondeado a 1 decimal.
+     */
+    function avg(arr) {
+      return parseFloat((arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(1));
+    }
+
+    /**
+     * Construye y muestra el panel de resultados de la sesión.
+     * Calcula estadísticas agregadas y rellena el DOM.
+     * @returns {void}
+     */
+    function showSessionResults() {
+      // ── Tabla de intentos ──
+      const bestScore = Math.max(...sessionAttempts.map(a => a.score));
+      resultsTbody.innerHTML = '';
+
+      sessionAttempts.forEach((a, i) => {
+        const tr = document.createElement('tr');
+        if (a.score === bestScore && bestScore > 0) tr.classList.add('best-row');
+        tr.innerHTML = `
+          <td>${i + 1}${a.score === bestScore && bestScore > 0 ? ' ★' : ''}</td>
+          <td>${a.score}</td>
+          <td>${a.maxLevel}</td>
+          <td>${formatDuration(a.duration)}</td>
+          <td>${a.steps}</td>
+          <td>${a.maxSpeedCps} c/s</td>
+        `;
+        resultsTbody.appendChild(tr);
+      });
+
+      // ── Estadísticas de sesión ──
+      const scores      = sessionAttempts.map(a => a.score);
+      const durations   = sessionAttempts.map(a => a.duration);
+      const stepsArr    = sessionAttempts.map(a => a.steps);
+      const speeds      = sessionAttempts.map(a => a.maxSpeedCps);
+      const levels      = sessionAttempts.map(a => a.maxLevel);
+
+      const totalTime   = durations.reduce((a, b) => a + b, 0);
+      const totalSteps  = stepsArr.reduce((a, b) => a + b, 0);
+      const totalFood   = scores.reduce((a, b) => a + b, 0);
+      const avgScore    = avg(scores);
+      const avgDuration = avg(durations);
+      const maxLvlSess  = Math.max(...levels);
+      const maxSpeedSess= Math.max(...speeds);
+      // Eficiencia: comida obtenida por cada 100 celdas recorridas
+      const efficiency  = totalSteps > 0 ? parseFloat((totalFood / totalSteps * 100).toFixed(1)) : 0;
+
+      const statsData = [
+        { label: 'Mejor puntuación',    value: bestScore,                   highlight: true  },
+        { label: 'Promedio de score',   value: avgScore,                    highlight: false },
+        { label: 'Total de comida',     value: `${totalFood} pts`,          highlight: false },
+        { label: 'Tiempo total',        value: formatDuration(totalTime),   highlight: false },
+        { label: 'Duración promedio',   value: formatDuration(avgDuration), highlight: false },
+        { label: 'Recorrido total',     value: `${totalSteps} celdas`,      highlight: false },
+        { label: 'Nivel máx. sesión',   value: maxLvlSess,                  highlight: true  },
+        { label: 'Vel. máx. sesión',    value: `${maxSpeedSess} c/s`,       highlight: false },
+        { label: 'Eficiencia',          value: `${efficiency}%`,            highlight: false },
+      ];
+
+      statsGrid.innerHTML = statsData.map(s => `
+        <div class="stat-item">
+          <span class="stat-label">${s.label}</span>
+          <span class="stat-value ${s.highlight ? 'highlight' : ''}">${s.value}</span>
+        </div>
+      `).join('');
+
+      // Mostrar panel y enfocar el botón
+      resultsOverlay.classList.add('visible');
+      btnNewSession.focus();
+      announceAlert(`Sesión completada. Mejor puntuación: ${bestScore}. Promedio: ${avgScore}. Pulsa el botón para nueva sesión.`);
+    }
+
+    /* ── Nueva sesión ────────────────────────────────────────── */
+
+    /**
+     * Reinicia el estado completo de la sesión y arranca el primer intento.
+     * @returns {void}
+     */
+    function startNewSession() {
+      sessionAttempts = [];
+      currentAttempt  = 0;
+      resultsOverlay.classList.remove('visible');
+      dots.forEach(d => d.classList.remove('done', 'active'));
+      startGame();
+    }
+
+    btnNewSession.addEventListener('click', startNewSession);
+
+    /* ── Modal de ayuda ──────────────────────────────────────── */
+
+    /**
+     * Abre el panel de ayuda, pausa el juego si está activo
+     * y transfiere el foco al botón de cierre.
+     * @returns {void}
+     */
+    function openHelp() {
+      if (running) {
+        running = false;
+        clearTimeout(loopId);
+      }
+      helpOverlay.classList.add('visible');
+      helpOverlay.removeAttribute('aria-hidden');
+      btnCloseHelp.focus();
+      announceAlert('Panel de ayuda abierto. Pulsa Escape o el botón Cerrar para volver al juego.');
+    }
+
+    /**
+     * Cierra el panel de ayuda y devuelve el foco al canvas.
+     * Si el juego estaba en curso, lo reanuda.
+     * @returns {void}
+     */
+    function closeHelp() {
+      helpOverlay.classList.remove('visible');
+      helpOverlay.setAttribute('aria-hidden', 'true');
+      canvas.focus();
+      // Si el juego estaba corriendo antes de abrir ayuda, reanudarlo
+      if (!gameOver && !running && score > 0) {
+        running = true;
+        scheduleNext();
+      }
+    }
+
+    btnHelp.addEventListener('click', openHelp);
+    btnCloseHelp.addEventListener('click', closeHelp);
+
+    /* ── Iniciar intento ─────────────────────────────────────── */
+
+    /**
+     * Inicia o reinicia un intento dentro de la sesión activa.
+     * @returns {void}
+     */
+    function startGame() {
+      clearTimeout(loopId);
+      init();
+      running = true;
+      hideMessage();
+      alertEl.textContent = '';
+      canvas.focus();
+      scheduleNext();
+    }
+
+    /* ── Controles de teclado ────────────────────────────────── */
+
+    /** @type {Object.<string, { x: number, y: number }>} */
+    const keyMap = {
+      ArrowUp:    { x:  0, y: -1 },
+      ArrowDown:  { x:  0, y:  1 },
+      ArrowLeft:  { x: -1, y:  0 },
+      ArrowRight: { x:  1, y:  0 },
+    };
+
+    document.addEventListener('keydown', e => {
+      // Cerrar modal de ayuda con Escape
+      if (e.key === 'Escape' && helpOverlay.classList.contains('visible')) {
+        closeHelp(); return;
+      }
+
+      // Abrir ayuda con H o ?
+      if ((e.key === 'h' || e.key === 'H' || e.key === '?') &&
+          !helpOverlay.classList.contains('visible') &&
+          !resultsOverlay.classList.contains('visible')) {
+        openHelp(); return;
+      }
+
+      // Ignorar teclas si algún modal está visible
+      if (helpOverlay.classList.contains('visible'))    return;
+      if (resultsOverlay.classList.contains('visible')) {
+        // Cerrar resultados con Escape también
+        if (e.key === 'Escape') { startNewSession(); }
+        return;
+      }
+
+      if (keyMap[e.key]) {
+        e.preventDefault();
+        const d = keyMap[e.key];
+        if (d.x !== -dir.x || d.y !== -dir.y) nextDir = d;
+        if (!running && !gameOver) startGame();
+        return;
+      }
+      if ((e.key === 'Enter' || e.key === ' ') && (!running || gameOver)) {
+        startGame(); return;
+      }
+      if (!running && !gameOver) startGame();
+    });
+
+    /* ── Arranque inicial ────────────────────────────────────── */
+    init();
+    draw();
+  </script>
+</body>
+<footer>
+    <p>&copy; 2026 <strong><a href="mailto:acardozos@correo.unefm.edu.ve">Adolfo J. Cardozo S.</a></strong> Disponible bajo la <a href="LICENSE" target="_blank">Licencia MIT</a>.</p>
+</footer>
+</html>

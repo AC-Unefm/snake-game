@@ -1,0 +1,22 @@
+# Operating System Clutter
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+Ehthumbs.db
+Desktop.ini
+
+# Code Editor Configurations (VS Code, etc.)
+# VS Code
+.vscode/
+!.vscode/extensions.json
+
+# WebStorm / JetBrains
+.idea/
+*.iml
+
+# Backups or logs
+*.log
