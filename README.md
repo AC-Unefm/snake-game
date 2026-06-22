@@ -12,12 +12,12 @@ Puedes disfrutar del juego directamente desde el navegador a través de nuestro 
 
 ### 🌐 Accesos Alternativos y Espejos
 Si el acceso principal presenta alguna saturación, puedes utilizar el espejo nativo de GitHub Pages:
-* [Espejo Alternativo (GitHub Pages)](https://ac-unefm.github.io/snake-game/)
+* [Espejo Alternativo (GitHub Pages)](https://ac-unefm.github.io/snake-game)
 
 ### 🛠️ Código Fuente
 Si eres estudiante o investigador y deseas revisar la lógica del juego, puedes clonar este repositorio directamente:
 ```bash
-git clone [https://github.com/ac-unefm/snake-game.git](https://github.com/ac-unefm/snake-game.git)
+git clone https://github.com/ac-unefm/snake-game.git
 ```
 &nbsp;&nbsp;
 [Reportar un problema acá](https://github.com/ac-unefm/snake-game/issues)
