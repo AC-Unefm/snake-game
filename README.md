@@ -1,4 +1,4 @@
-# 🐍 Snake
+# 🐍 Snake Classic Game
 
 > Un juego clásico de Snake construido exclusivamente con tecnologías web nativas (HTML, CSS y JavaScript vanilla). Sin frameworks, sin dependencias, sin herramientas de compilación. Un único archivo `index.html`
 
@@ -28,19 +28,24 @@ git clone https://github.com/ac-unefm/snake-game.git
 
 Este proyecto nació como demostración de una idea simple pero poderosa de que, con conocimiento sólido de las herramientas básicas y estandares de la web, se pueden construir experiencias completas, accesibles y bien diseñadas sin necesidad de sobrecargar el proyecto con dependencias externas.
 
-Todo el juego — lógica, estilos, marcado, persistencia y accesibilidad — vive en un único archivo de menos de 500 líneas de código, lo que lo convierte en un recurso ideal y didáctico para estudiantes y desarrolladores que quieran ver cómo se aplican buenas prácticas reales en un proyecto concreto y funcional.
+Todo el juego — lógica, estilos, marcado, persistencia y accesibilidad — vive en un único archivo autocontenido, que lo convierte en un recurso ideal y didáctico para estudiantes y desarrolladores que quieran ver cómo se aplican buenas prácticas reales en un proyecto concreto y funcional.
+
+Es un ejemplo práctico que demuestra cómo construir una aplicación web robusta y con características modernas utilizando exclusivamente las APIs nativas del navegador, sin dependencias externas ni herramientas de compilación.
 
 ---
 
 ## Características y Cómo jugar
 
 - 🎮 **Dificultad progresiva**: La velocidad aumenta cada 5 puntos
-- 🏆 **Sistema de sesiones:** Cada partida agrupa 5 intentos con estadísticas detalladas ().
+- 🏆 **Sistema de sesiones:** Cada partida agrupa 5 intentos con estadísticas detalladas.
 - 💾 **Persistencia:** Mejor puntuación guardada localmente en `localStorage`
 - 📊 **Panel de resultados:** Con métricas por intento (puntuación, nivel, duración, recorrido, velocidad máxima y eficiencia).
-- 🌑 **Modo Oscuro Nativo:** Adaptable automáticamente según las preferencias del sistema.
+- 📱 **Responsive y táctil** — funciona en móvil, tablet y desktop; controles por swipe y D-pad en pantallas táctiles
+- 🌑 **Modo Oscuro Nativo:** Adaptable automáticamente según las preferencias del sistema, nativo, sin configuración.
 
 ## Controles
+
+### Teclado
 
 | Acción | Tecla |
 |---|---|
@@ -49,22 +54,46 @@ Todo el juego — lógica, estilos, marcado, persistencia y accesibilidad — vi
 | Abrir ayuda | `?` o `H` |
 | Cerrar ayuda / modal | `Escape` |
 
+### Táctil (móvil y tablet)
+
+| Acción | Gesto |
+|---|---|
+| Mover la serpiente | Deslizar en cualquier dirección sobre el tablero |
+| Iniciar / reiniciar | Tocar el tablero |
+| Controles direccionales | D-pad visible bajo el tablero en pantallas táctiles |
+| Abrir ayuda | Botón `?` en la esquina superior derecha |
+
 **Objetivo:** *Evita las paredes y tu propio cuerpo. Come la comida roja para crecer.*
+*Cada sesión tiene 5 intentos. Al completarlos, verás un resumen con tus estadísticas.*
 
 ---
 
 ## 🛠️ Enfoque Técnico y Conceptos Demostrados
 
-A pesar de su simplicidad estructural, el código implementa estándares y buenas prácticas de desarrollo moderno:
+A pesar de su simplicidad estructural en un único archivo, el código implementa estándares rigurosos y buenas prácticas de desarrollo web moderno, sirviendo como un recurso didáctico completo.
 
-* **Lógica y Gráficos:** Game loop mediante `setTimeout` recursivo para control dinámico de velocidad y renderizado con Canvas API 2D.
-* **Canvas API** — dibujo de primitivas, `save/restore`, `shadowBlur`, `arcTo`
-* **Persistencia:** Manejo robusto de `localStorage` mediante bloques `try/catch`.
-* **Accesibilidad (Web para todos):** Cumplimiento de **WAI-ARIA 1.2** (`aria-live`, `aria-modal`, roles semánticos , `role`, `aria-describedby`), navegación completa por teclado con *focus trap* en diálogos y respeto por `prefers-reduced-motion`.
-* **Documentación:** Código completamente documentado usando sintaxis **JSDoc**.
-* **Tecnologías:** HTML5 semántico, estilos CSS3 con variables y `@media`,  JavaScript ES2020 vanilla.
+### 🎮 Arquitectura del Juego y Gráficos
+* **Game Loop Dinámico:** Control del ciclo de actualización y de la dificultad progresiva mediante `setTimeout` recursivo, permitiendo variaciones de velocidad en tiempo real.
+* **Canvas API 2D:** Renderizado avanzado de primitivas y optimización gráfica utilizando `save/restore`, efectos de iluminación con `shadowBlur` y trazados fluidos con `arcTo`.
 
-Sin npm. Sin webpack. Sin React. Sin nada más.
+### 🎨 Diseño y Estructura Interactiva
+* **Estructura Semántica:** Maquetación limpia basada en HTML5 semántico.
+* **Estilos Fluidos y Variables CSS:** Implementación de variables nativas para un *theming* consistente y uso de `clamp()` para lograr un diseño responsive y fluido.
+* **Canvas Responsive:** Escalado del canvas mediante CSS y media queries dedicadas para adaptar el layout a escritorio, tablet, móvil y orientación landscape.
+* **Modo Oscuro Nativo:** Integración automatizada que respeta las preferencias del sistema operativo mediante media queries (`@media`).
+
+### 📱 Interactividad Avanzada y Accesibilidad
+* **Touch Events API:** Soporte completo para dispositivos móviles mediante detección nativa de gestos (*swipe detection*), prevención de scroll accidental con `touch-action: none` y renderizado de un D-pad táctil dinámico.
+* **Accesibilidad Web (WAI-ARIA 1.2):** Cumplimiento de estándares de inclusión utilizando atributos dinámicos (`aria-live`, `aria-modal`, `aria-hidden`, roles semánticos y `aria-describedby`).
+* **Control por Teclado Completo:** Navegación e interacción total mediante teclado, gestión de *focus visible*, técnica de *focus trap* en diálogos interactivos, atajos para cierre de modales con `Escape` y enlaces de salto rápido (*skip links*).
+* **Respeto al Usuario:** Soporte integrado para `prefers-reduced-motion`, desactivando animaciones según la configuración del sistema operativo.
+
+### 🔒 Resiliencia, Seguridad y Documentación
+* **Persistencia Segura:** Gestión robusta del almacenamiento local con `localStorage` blindado mediante bloques `try/catch` para el manejo de excepciones.
+* **Seguridad del DOM (Anti-XSS):** Construcción segura de elementos utilizando `createElement` sobre la manipulación directa con `innerHTML`, mitigando riesgos de inyección de código.
+* **Content Security Policy (CSP):** Configuración de directivas de seguridad básicas directamente en el cliente, operando de forma segura sin necesidad de dependencias del servidor.
+* **Documentación Técnica Estándar:** Código fuente 100% autodocumentado utilizando la sintaxis formal de **JSDoc** en todas sus funciones.
+* **Stack Minimalista:** JavaScript ES2020 vanilla puro. Sin npm. Sin webpack. Sin React. Sin nada más.
 
 ---
 
@@ -75,13 +104,17 @@ No requiere de ningún servidor ni proceso de instalación:
 1. Clona el repositorio o descarga el archivo `index.html`.
 2. Haz doble clic en `index.html` para abrirlo directamente en cualquier navegador moderno.
 
-*(Opcional para desarrollo)*: Puedes levantar un servidor local rápido con `python -m http.server 8080` o `npx serve .`.
+*(Opcional para desarrollo)*: Puedes levantar un servidor local rápido ejecutando:
+
+```bash
+python -m http.server 8080
+# o
+npx serve .
+```
 
 ---
 
 ## 📄 Licencia
-
-## Licencia
 
 Copyright (c) 2026 Adolfo J. Cardozo S. [<acardozos@correo.unefm.edu.ve>]
 Distribuido bajo la licencia **MIT**. Siéntete libre de usar, modificar y distribuir el código con su respectiva atribución. Ver [Licencia MIT](LICENSE) para más detalles.
